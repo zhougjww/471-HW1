@@ -1,0 +1,143 @@
+---
+title: "MLDM_HW1_chaptor_3"
+author: "Guangjin Zhou"
+date: "February 4, 2019"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## Load the library
+
+```{r}
+library("ISLR")
+```
+
+9. This question involves the use of multiple linear regression on the Auto data set.
+
+## (a) Produce a scatterplot matrix which includes all of the variables in the data set. 
+
+```{r}
+auto<-Auto
+dim(Auto);str(auto)
+```
+
+```{r}
+pairs(auto)
+```
+
+
+## (b) Compute the matrix of correlations between the variables using the function cor().
+
+You will need to exclude the name variable,cor() which is qualitative. 
+
+```{r}
+auto$name<-NULL
+fix(auto)
+```
+
+```{r}
+cor(auto[1:6])
+```
+
+
+It appears mpg are negative correlated with cylinders, displacement, hosepower and weigth, cylinder and displacement, horsepower and weight are all strongly and positively correlated. 
+
+## (c) Use the lm() function to perform a multiple linear regression with mpg as the response and all other variables except name as the predictors. 
+
+Use thesummary() function to print the results. Comment on the output. For instance: i. Is there a relationship between the predictors and the response? ii. Which predictors appear to have a statistically signifficant relationship to the response? iii. What does the coefficient for the year variable suggest? 
+
+```{r}
+model1<-lm (mpg~cylinders+displacement+horsepower+weight+acceleration+year+origin,data=auto)
+```
+
+
+```{r}
+summary(model1)
+```
+
+```{r}
+model1$coefficients
+```
+
+### I: mpg are negative correlated with cylinders, displacement, hosepower and weigth, cylinder and displacement but positively correlated with year and origin. 
+
+### II: Displacement, weight, year and origin all have statistically signinficant relationship with response mpg. 
+
+### III: The coefficient for the year variable is 0.750, which means for every unit of mpg increase, there is 0.750 unit of year unit increase when all others are kept at the constant levels.
+
+## (d) Use the plot() function to produce diagnostic plots of the linear regression. Comment on any problems you see with the it.
+
+Do the residual plots suggest any unusually large outliers? Does the leverage plot identify any observations with unusually high leverage? 
+
+```{r}
+par(mfrow=c(2,2))
+plot(model1)
+```
+
+The plot of residuals versus fitted values indicates there are some kind of non-linearity in part of the data,such as #324, #326 and #327. The plot of standardized residuals vs leverage suggests few outliners such as #327, #394 and #14. Among them, #14 has high leverage based on cook' distance.
+
+## (e) Use the * and : symbols to the linear regression models with interaction effects.
+
+Do any interactions appear to be statistically signiïnificant? 
+
+From the correlatin matrix, cylinders and displacement, weight and displacement have the highest correlation. So I checked their interaction
+
+```{r}
+model2<-lm (mpg~cylinders*displacement+ displacement*weight,data=auto)
+```
+
+
+```{r}
+summary(model2)
+```
+
+The interaction between displacement and weight appears to be statistically significant.
+
+## (f) Try a few different transformations of the variables, such as log(X),  comment on your findings.
+
+
+```{r}
+par(mfrow = c(2, 2))
+plot(log(Auto$horsepower), Auto$mpg)
+plot(sqrt(Auto$horsepower), Auto$mpg)
+plot((Auto$horsepower)^2, Auto$mpg)
+```
+
+```{r}
+par(mfrow = c(2, 2))
+plot(log(auto$displacement), auto$mpg)
+plot(sqrt(auto$displacement), auto$mpg)
+plot((auto$displacement)^2, auto$mpg)
+```
+
+```{r}
+par(mfrow = c(2, 2))
+plot(log(auto$weight), auto$mpg)
+plot(sqrt(auto$weight), auto$mpg)
+plot((auto$weight)^2, auto$mpg)
+```
+
+
+```{r}
+par(mfrow = c(2, 2))
+plot(log(auto$acceleration), auto$mpg)
+plot(sqrt(auto$acceleration), auto$mpg)
+plot((auto$acceleration)^2, auto$mpg)
+```
+
+
+
+Looks log transformation generated best transformation for horsepower, displacement and weight but square root transfomration of accerleration gave the best linear relationsip. So I used different transformation in the model.
+
+```{r}
+model3<-lm (mpg~cylinders+log(displacement)+log(horsepower)+log(weight)+sqrt(acceleration)+year+origin,data=auto)
+```
+
+```{r}
+summary(model3)
+```
+
+ 
