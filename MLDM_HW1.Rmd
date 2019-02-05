@@ -1,0 +1,112 @@
+---
+title: "MLDM_HW1"
+author: "Guangjin Zhou"
+date: "February 3, 2019"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## Load the library
+
+```{r}
+library("ISLR")
+```
+
+## (a) Read dataset College
+
+ Use the read.csv() function to read the data into R. Call the loaded data college. Make sure that you have the directory set to the correct location for the data.
+
+```{r}
+college<-data.frame(College)
+dim(college); str(college)
+```
+
+## Remove collge names column
+
+```{r}
+fix(college)
+```
+
+```{r}
+row.names(college)<-NULL;str(college)
+fix(college)
+```
+
+## (c) Explore the data
+
+### Numerial summary
+
+```{r pressure, echo=FALSE}
+summary(college)
+```
+
+### II Paired scatterplot matrix to top 10 columns
+
+```{r}
+A<-pairs(college[,1:10]);A
+```
+
+### IV Plot Out of states student body in private or non-private colleges
+
+```{r}
+plot(Outstate~Private, data=college)
+```
+
+From the plot, the out-of-state tuitions from private school are higher than non-private schools.
+
+### III Create Elite dummy variable
+
+```{r}
+Elite=rep("No",nrow(college )) 
+Elite[college$Top10perc >50]=" Yes" 
+Elite=as.factor(Elite) 
+college=data.frame(college ,Elite);head(college)
+```
+
+### Plot out-of-state tuition between elite school and non-elite school
+
+```{r}
+plot(Outstate~Elite, data=college)
+```
+
+From the plot, the out-of-state tuitions from the elite schools are higher than non-elite school.
+
+### V histograms of quantitative variable
+
+```{r}
+par(mfrow=c(2,3))
+    
+hist(college$Apps)
+hist(college$Accept)
+hist(college$Enroll)
+hist(college$Top10perc)
+hist(college$Top25perc)
+hist(college$F.Undergrad)
+hist(college$P.Undergrad)
+hist(college$Outstate)
+hist(college$Room.Board)
+hist(college$Books)
+hist(college$PhD)
+hist(college$Grad.Rate)
+hist(college$S.F.Ratio)
+hist(college$Personal)
+hist(college$perc.alumni)
+```
+
+### VI Ph.D degree faculites vs elite schools or graduation rate vs elite school
+
+```{r}
+plot(PhD~Elite, data=college)
+```
+
+It looks that elite schools have much higher rate of Ph.D degree faculties than non-elite schools.
+
+
+```{r}
+plot(Grad.Rate~Elite, data=college)
+```
+
+It looks that elite schools have much higher rate of graduation rate than non-elite schools.
