@@ -1,0 +1,102 @@
+---
+title: "titantic HW"
+author: "Guangjin Zhou"
+date: "February 5, 2019"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## R Markdown
+
+```{r message=FALSE, warning=FALSE}
+library(titanic); library(gmodels);library(ggplot2);library(vioplot)
+```
+
+```{r}
+packageDescription("titanic") 
+ls("package:titanic") 
+```
+
+
+```{r}
+str(titanic_test); dim(titanic_test)
+str(titanic_train);dim(titanic_train)
+```
+
+```{r}
+df<-titanic_train
+table(df$Survived)
+```
+
+## Cross table of survived and sex
+
+```{r}
+CrossTable(df$Survived, df$Sex, chisq = T)
+```
+
+Among survived, 68% are female,32% are male. Among died, 15% are female, 85% are male.
+
+## Cross table of survived and passenger seat class
+
+```{r}
+CrossTable(df$Survived, df$Pclass,chisq = T)
+```
+
+Among survived, 40% have first class,25% have second class and 35% have third class. Among died, 14% have first class,17% have second class and 68% have third class.
+
+## Cross table of survived and siblings
+
+```{r}
+CrossTable(df$Survived, df$SibSp,chisq = T)
+```
+
+## Cross table of survived and porch
+
+```{r}
+CrossTable(df$Survived, df$Parch,chisq = T)
+```
+
+```{r}
+CrossTable(df$Survived, df$Embarked,chisq = T)
+```
+
+
+## Plot of age by survived
+
+```{r}
+boxplot(df$Age~df$Survived,notch=TRUE, col=c("gold","darkgreen"))
+```
+
+## Plot of fare by survived
+
+```{r}
+boxplot(df$Fare~df$Survived )
+```
+
+# Linear Model
+
+## Model1 with majority of variables
+
+```{r}
+lm1<-lm(Survived~Pclass+Sex+Age+SibSp+Parch+Fare+Embarked,data=df)      
+summary(lm1)
+```
+
+## Model2 withoug fare and Age
+
+```{r}
+lm2<-lm(Survived~Pclass+Sex+SibSp+Parch+Embarked,data=df)      
+summary(lm2)
+```
+
+## Model3 with log transformed age
+
+```{r}
+lm3<-lm(Survived~Pclass+Sex+SibSp+Parch+Embarked+log(Age),data=df)      
+summary(lm3)
+```
+
+

@@ -1,0 +1,172 @@
+---
+title: "MLDM-Chaptor4-HW1"
+author: "Guangjin Zhou"
+date: "February 5, 2019"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+
+13. Using the Boston data set, ???t classi???cation models in order to predict whether a given suburb has a crime rate above or below the median. Explore logistic regression, LDA, and KNN models using various subsets of the predictors. Describe your ???ndings.
+
+
+## Load the libraries
+
+```{r}
+library("ISLR");  
+library("class")
+```
+
+## Boston Dataset
+
+```{r}
+library (MASS);ls("package:MASS")
+```
+
+```{r}
+attach(Boston); dim(Boston);str(Boston)
+```
+
+```{r}
+head(Boston)
+```
+
+```{r}
+cor(Boston)
+```
+
+```{r}
+summary(crim)
+```
+
+### crim as a binary variable
+
+```{r}
+
+crim01 <- rep(0, length(crim))
+crim01[crim > median(crim)] <- 1
+Boston <- data.frame(Boston, crim01)
+```
+
+### Split the test and training data
+
+```{r}
+train <- 1:(length(crim) / 2)
+test <- (length(crim) / 2 + 1):length(crim)
+Boston.train <- Boston[train, ]
+Boston.test <- Boston[test, ]
+crim01.test <- crim01[test]
+```
+
+# Logistic models
+
+## Model with all the varialbes
+
+
+```{r}
+fit.glm1 <- glm(crim01 ~ . - crim01 - crim, data = Boston, family = binomial, subset = train)
+summary(fit.glm1)
+```
+
+```{r}
+probs1 <- predict(fit.glm1, Boston.test, type = "response")
+pred.glm1 <- rep(0, length(probs1))
+pred.glm1[probs1 > 0.5] <- 1
+table(pred.glm1, crim01.test)
+```
+
+
+## model without chas and nox
+
+```{r}
+fit.glm2 <- glm(crim01 ~ . - crim01 - crim - chas - nox, data = Boston, family = binomial, subset = train)
+summary(fit.glm2)
+```
+
+```{r}
+probs2 <- predict(fit.glm2, Boston.test, type = "response")
+pred.glm2 <- rep(0, length(probs2))
+pred.glm2[probs2 > 0.5] <- 1
+table(pred.glm2, crim01.test)
+```
+
+*So the fitted logistic model 2 is better than model 1.*
+
+
+# LDA mode
+
+
+## LDA model with all the vairables
+
+```{r}
+fit.lda1 <- lda(crim01 ~ . - crim01 - crim, data = Boston, subset = train)
+pred.lda1 <- predict(fit.lda1, Boston.test)
+table(pred.lda1$class, crim01.test)
+ 
+```
+
+## LDA model without chas and nox
+
+```{r}
+fit.lda2 <- lda(crim01 ~ . - crim01 - crim - chas - nox, data = Boston, subset = train)
+pred.lda2 <- predict(fit.lda2, Boston.test)
+table(pred.lda2$class, crim01.test)
+```
+
+*So the fitted LDA model 1 is better than model LDA 2.*
+
+# KNN modles
+
+
+## Training and test data  
+
+## Model with K=1
+
+```{r}
+train.X <- cbind(zn, indus, chas, nox, rm, age, dis, rad, tax, ptratio, black, lstat, medv)[train, ]
+test.X <- cbind(zn, indus, chas, nox, rm, age, dis, rad, tax, ptratio, black, lstat, medv)[test, ]
+train.crim01 <- crim01[train]
+```
+
+```{r}
+set.seed(471)
+pred.knn1 <- knn(train.X, test.X, train.crim01, k = 1)
+table(pred.knn1, crim01.test)
+```
+
+
+## Model with K=5
+
+```{r}
+set.seed(471)
+pred.knn5 <- knn(train.X, test.X, train.crim01, k = 5)
+table(pred.knn5, crim01.test)
+```
+
+## Model with K=10
+
+```{r}
+set.seed(471)
+pred.knn10 <- knn(train.X, test.X, train.crim01, k = 10)
+table(pred.knn10, crim01.test)
+```
+
+
+## Model with K=50
+
+```{r}
+set.seed(471)
+pred.knn50 <- knn(train.X, test.X, train.crim01, k = 50)
+table(pred.knn50, crim01.test)
+```
+
+
+*So the KNN models with K=10 is best, K=50 is very close to the best.*
+
+```{r}
+detach(Boston)
+```
+
