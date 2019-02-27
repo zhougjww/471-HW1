@@ -1,0 +1,193 @@
+---
+title: "HW2-chapter8"
+author: "Guangjin Zhou"
+date: "February 26, 2019"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE, warning = FALSE)
+```
+
+## Libraries
+
+```{r cars}
+library(rpart);library(ISLR);library(dplyr);library(tree)
+```
+
+## Orange juice dataset
+
+```{r}
+dim(OJ); names(OJ)
+```
+
+Variable codebook: 
+
+WeekofPurchase: Week of purchase
+
+StoreID: Store ID
+
+PriceCH: Price charged for CH (Citrus Hill)
+
+PriceMM: Price charged for MM (Minute Maid)
+
+DiscCH:Discount offered for CH (Citrus Hill)
+
+DiscMM:Discount offered for MM (Minute Maid)
+
+SpecialCH: Indicator of special on CH (Citrus Hill)
+
+SpecialMM: Indicator of special on MM (Minute Maid)
+
+LoyalCH:Customer brand loyalty for CH (Citrus Hill)
+
+SalePriceMM: Sale price for MM (Minute Maid)
+
+SalePriceCH: Sale price for CH (Citrus Hill)
+
+PriceDiff: Sale price of MM (Minute Maid) less sale price of CH (Citrus Hill)
+
+Store7: A factor with levels No and Yes indicating whether the sale is at Store 7
+
+PctDiscMM: Percentage discount for MM (Minute Maid)
+
+PctDiscCH: Percentage discount for CH (Citrus Hill)
+
+ListPriceDiff: List price of MM (Minute Maid) less list price of CH (Citrus Hill)
+
+STORE:  5 possible stores the sale occured 
+
+
+# 9. 
+
+This problem involves the OJ data set which is part of the ISLR package.
+
+## (a) Create a training set containing a random sample of 800 observations,and a test set containing the remaining observations.
+
+### A random sampling function
+
+```{r}
+randomRows = function(df,n){
+   return(df[sample(nrow(df),n),])
+}
+```
+
+### Training and test dataset
+
+```{r}
+OJ$ID <- seq.int(nrow(OJ));names(OJ)
+
+OJ_train<-randomRows(OJ, 800);dim(OJ_train)
+OJ_test<-dplyr::anti_join(OJ, OJ_train, by="ID"); dim(OJ_test)
+```
+
+```{r}
+OJ_train$ID<-NULL
+OJ_test$ID<-NULL
+```
+
+
+## (b) Fit a tree to the training data, with Purchase as the response and the other variables as predictors.
+
+Use the summary() function to produce summary statistics about the tree, and describe the results obtained. What is the training error rate? How many terminal nodes does the tree have?
+
+## tree by rpart
+
+```{r}
+OJ.tree1<-rpart(Purchase ~ ., data=OJ_train);summary(OJ.tree1)
+```
+
+
+
+
+## Use tree library 
+
+```{r}
+OJ.tree2<- tree(Purchase ~ ., data=OJ_train); summary(OJ.tree2)
+```
+
+
+Answer: I got 3 splits and 11 nodes tree by rpart, the error rate for 3 split is 0.40625. But I got 4 splits and 27 nodes tree by tree library,  the misclassification error rete is 0.1625. 
+
+## (c) Type in the name of the tree object in order to get a detailed text output. Pick one of the terminal nodes, and interpret the information displayed.
+
+```{r}
+OJ.tree1;
+```
+
+For example, terminal node labeled "5)". The splitting variable at this node is LoyalCH. The splitting value of this node is 0.7645725. There are 241 points in the folloiing branch below this node. The deviance for all points in region below this node is 72. A * in the line denotes that this is in fact a terminal node. The prediction at this node is LoyalCH = CH. About 78% points in this node have CH as value of loyalCH. Remaining 21% points have CH as LoyalCH .
+
+```{r}
+OJ.tree2
+```
+
+## (d) Create a plot of the tree, and interpret the results.
+
+```{r}
+plot(OJ.tree1);text(OJ.tree1)
+plot(OJ.tree1, uniform=T); text(OJ.tree1, all=T, use.n=T)
+```
+
+```{r}
+plot(OJ.tree2);text(OJ.tree2)
+plot(OJ.tree2, uniform=T); text(OJ.tree2, all=T, use.n=T)
+
+```
+
+
+LoyalCH  is the most important variable of the tree, Two different tree modesl show the first node is LoyalCH. Both trees also predicts MM. The tree decision is also depends on the value of PriceDiff at some point.
+
+
+## (e) Predict the response on the test data, and produce a confusion matrix comparing the test labels to the predicted test labels. What is the test error rate?
+
+```{r}
+oj.pred1 = predict(OJ.tree1, OJ_test, type = "class")
+table(OJ_test$Purchase, oj.pred1)
+```
+
+The test error rate for CH is 27/(27+126)=0.176, the test error rate for MM is 25/(25+72)=0.257. 
+
+
+
+## (f) Apply the cv.tree() function to the training set in order to determine the optimal tree size.
+
+I picked tree 2 to do prune function
+
+```{r warning=FALSE}
+cv.oj1 <- cv.tree(OJ.tree2, FUN = prune.tree); summary(cv.oj1)
+```
+
+## (g) Produce a plot with tree size on the x-axis and cross-validated classification error rate on the y-axis.
+
+I picked tree 2 to produce the plot.
+
+```{r}
+plot(cv.oj1$size, cv.oj1$dev, type = "b", xlab = "Tree Size", ylab = "Deviance")
+```
+
+
+
+## (h) Which tree size corresponds to the lowest cross-validated classification error rate?
+
+Size of 7 gives lowest cross-validation error.
+
+## (i) Produce a pruned tree corresponding to the optimal tree size obtained using cross-validation. 
+
+```{r}
+oj.pruned <- prune.tree(OJ.tree2, best = 7); summary(oj.pruned)
+```
+
+
+If cross-validation does not lead to selection of a pruned tree, then create a pruned tree with five terminal nodes.
+
+## (j) Compare the training error rates between the pruned and unpruned trees. Which is higher?
+
+```{r}
+summary(OJ.tree2)
+```
+
+Misclassification error of pruned tree is exactly same as that of original tree - 0.1625.
+
+## (k) Compare the test error rates between the pruned and unpruned trees. Which is higher?
+
+

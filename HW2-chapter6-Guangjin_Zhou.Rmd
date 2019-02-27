@@ -1,0 +1,296 @@
+---
+title: "Chapter 6"
+author: "Guangjin Zhou"
+date: "February 25, 2019"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## R libraries
+
+```{r warning=FALSE}
+library(ISLR);library(MASS); library(leaps);library(glmnet);library(pls)
+```
+
+```{r}
+ls("package:ISLR"); names(College); dim(College)
+```
+
+
+# 9.  Predict the number of applications received using the other variables in the College data set.
+
+## (a) Split the data set into a training set and a test set.
+
+```{r}
+set.seed(471)
+n<-nrow(College)
+x<-c()
+
+set.seed(100)
+train<-sample(1:n,n/2)
+test<--train
+```
+
+## (b) Fit a linear model using least squares on the training set and report the test error obtained.
+
+
+```{r}
+lm.fit<-lm(Apps~.,data=College[train,])
+lm.pred<-predict(lm.fit,newdata = College[test,])
+x<-c(x,lm=mean((lm.pred-College[test,"Apps"])^2 ))
+x
+```
+
+The mean square of linear model by least square model is 1355557.
+
+## (c) Fit a ridge regression model on the training set, with ?? chosen by cross-validation and report the test error obtained.
+
+### Rige matrix
+
+```{r}
+ggrid <-10 ^ seq(4, -2, length=100)
+train.mat <- model.matrix(Apps~., data=College[train,])
+test.mat <- model.matrix(Apps~., data=College[test,])
+```
+
+### Cross model
+
+
+
+ridge.cv<-cv.glmnet(x=train.mat,y=College[train,"Apps"],alpha=0,thresh=1e-12,lambda = grid)
+ridge.fit<-glmnet(x=train.mat,y=College[train,"Apps"],alpha=0, lambda = ridge.cv$lambda.min)
+ridge.pred<-predict(ridge.fit,newx=test.mat )
+ridge.coef<-predict(ridge.fit,type='coefficients', s=ridge.cv$lambda.min)
+
+ridge.cv$lambda.min
+
+
+
+minimum lamdam from ridge crossvalidation is 14.17474.
+
+### test error 
+
+
+x1<-c(x,ridge=mean((ridge.pred-College[test,2])^2));x1
+
+
+The mean square of testing model is 1355557, very close to value of training model, suggest the model fit well.
+
+## (d) Fit a lasso model on the training set, with ?? chosen by crossvalidation. 
+
+Report the test error obtained, along with the number of non-zero coefficient estimates.
+
+
+
+lasso.cv<-cv.glmnet(train.mat,y=College[train,"Apps"],alpha=1,lambda=grid,thresh=1e-12)
+lasso.fit<-glmnet(x=as.matrix(College[train,-c(1,2)]),y=College[train,2],alpha=1,lambda = lasso.cv$lambda.min)
+lasso.coef<-predict(lasso.fit,type='coefficients',s=lasso.cv$lambda.min);lasso.coef
+
+17 x 1 sparse Matrix of class "dgCMatrix"
+                        
+  *(Intercept) -1.364330e+03 
+  
+  *Accept       1.264287e+00 
+  
+  *Enroll       .      
+  
+  *Top10perc    3.850869e+01 
+  
+  *Top25perc   -4.595076e+00 
+  
+  *F.Undergrad  3.380132e-02 
+  
+  *P.Undergrad  7.214142e-02
+  
+  *Outstate    -8.197778e-02 
+  
+  *Room.Board   2.618713e-01 
+  
+  *Personal     .          
+  
+  *PhD         -2.243368e+00 
+  
+  *Terminal     .           
+  
+  *S.F.Ratio    .            
+  
+  *perc.alumni -1.614927e+01 
+  
+  *Expend       6.392972e-02 
+  
+  *Grad.Rate    6.941991e+00 
+
+lasso.cv$lambda.min; lasso.cv$coef
+
+[1] 16.29751
+
+
+
+lasso.pred<-predict(ridge.fit,newx=test.mat)
+x<-c(x,lasso=mean( (lasso.pred-College[test,2])^2));x
+
+
+## (e) Fit a PCR model on the training set, with M chosen by crossvalidation.
+
+Report the test error obtained, along with the value of M selected by cross-validation.
+
+```{r}
+set.seed(471)
+
+pcr.fit<-pcr(Apps~.,data=College,scale=TRUE,validation='CV',subset=train)
+pcr.fit$ncomp
+validationplot(pcr.fit,val.type="MSEP");
+```
+```{r}
+pcr.pred<-predict(pcr.fit,newdata = College[test,-c(2)],ncomp = 16)
+x3=c(x,pcr=mean( (pcr.pred-College[test,2])^2));x3
+```
+
+
+## (f) Fit a PLS model on the training set, with M chosen by crossvalidation.
+
+Report the test error obtained, along with the value of M selected by cross-validation.
+
+
+```{r}
+pls.fit<-plsr(Apps~.,data=College,scale=TRUE,validation='CV',subset=train)
+validationplot(pls.fit,val.type="MSEP")
+```
+
+
+```{r}
+pls.fit$ncomp
+ 
+pls.pred=predict(pls.fit,newdata = College[test,-c(2)],ncomp = 10)
+x4=c(x,pls=mean( (pls.pred-College[test,2])^2));x4
+```
+
+## (g) Comment on the results obtained. 
+
+How accurately can we predict the number of college applications received? Is there much difference among the test errors resulting from these five approaches?
+
+```{r}
+sort(x)
+```
+
+From the results obtained there is not a significant difference from fitting a model with least squares, ridge, lasso and partial least squares. So I chose lm model.
+
+
+```{r}
+summary(lm.fit)
+```
+
+```{r}
+avg_apps<-mean(College[,"Apps"]); avg_apps
+
+1 - mean((College[test, "Apps"] - lm.pred)^2)
+
+1 - mean((College[test, "Apps"] - lm.pred)^2) /mean((College[test, "Apps"] - avg_apps)^2)
+```
+
+
+Conclusion:The average application unit is 3002, the best performing model with MSE 1,355,557 and 91% of variance  is explained by the model.
+
+# 11. Predict per capita crime rate in the Boston data set.
+
+```{r}
+names(Boston);
+```
+
+
+```{r}
+apply(is.na(Boston),2,sum)
+```
+
+```{r}
+# split data into training and test sets
+set.seed(1)
+trainid <- sample(1:nrow(Boston), nrow(Boston)/2)
+train <- Boston[trainid,]
+test <- Boston[-trainid,]
+xmat.train <- model.matrix(crim~., data=train)[,-1]
+xmat.test <- model.matrix(crim~., data=test)[,-1]
+
+```
+
+
+
+## (a) Try out some of the regression methods explored in this chapter,
+
+such as best subset selection, the lasso, ridge regression, and PCR. Present and discuss results for the approaches that you consider.
+
+### Best subset
+
+```{r}
+set.seed(471)
+
+ 
+predict.regsubsets <- function(object, newdata, id, ...){
+  form <- as.formula(object$call[[2]])
+  mat <- model.matrix(form, newdata)
+  coefi <- coef(object, id=id)
+  xvars <- names(coefi)
+  mat[,xvars]%*%coefi
+}
+
+# forward selection
+fit.fwd <- regsubsets(crim~., data=train, nvmax=ncol(Boston)-1)
+(fwd.summary <- summary(fit.fwd))
+ 
+```
+
+
+```{r}
+err.fwd <- rep(NA, ncol(Boston)-1)
+for(i in 1:(ncol(Boston)-1)) {
+  pred.fwd <- predict(fit.fwd, test, id=i)
+  err.fwd[i] <- mean((test$crim - pred.fwd)^2)
+}
+plot(err.fwd, type="b", main="Test MSE for Forward Selection", xlab="Number of Predictors")
+```
+
+
+
+
+
+## (b) Propose a model (or set of models) 
+
+that seem to perform well on this data set, and justify your answer. Make sure that you are evaluating model performance using validation set error, crossvalidation, or some other reasonable alternative, as opposed to
+using training error.
+
+### 4 predictors model based best subsets approach
+
+I chose zn, dis, rad and medv to predict crim based on lowest MSE from best subset approach.
+
+```{r}
+x <- model.matrix(crim ~ zn+dis+rad+medv, data=Boston)
+y <- Boston$crim
+cv.out <- cv.glmnet(x, y, alpha = 1, type.measure = "mse")
+plot(cv.out)
+```
+
+### Ridge regression
+
+```{r}
+cv.out.ridge <- cv.glmnet(x, y, alpha = 0, type.measure = "mse")
+plot(cv.out.ridge)
+```
+
+
+### PCR fit
+
+```{r}
+pcr.fit <- pcr(crim ~zn+dis+rad+medv, data = Boston, scale = TRUE, validation = "CV")
+summary(pcr.fit)
+validationplot(pcr.fit, val.type = "MSEP")
+```
+
+
+
+
+## (c) Does your chosen model involve all of the features in the dataset? Why or why not?
+
+As shown above,  the model with the 4 predictors looks have very low cross-validation error based on different model approches.

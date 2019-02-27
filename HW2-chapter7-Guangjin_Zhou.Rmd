@@ -1,0 +1,127 @@
+---
+title: "HW2-Chapter7"
+author: "Guangjin Zhou"
+date: "February 26, 2019"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## Libraries
+
+```{r warning=FALSE}
+library(MASS); library(splines);library(boot)
+```
+
+```{r}
+dim(Boston);names(Boston)
+```
+
+
+# 9. 
+
+This question uses the variables dis (the weighted mean of distances to five Boston employment centers) and nox (nitrogen oxides concentration in parts per 10 million) from the Boston data. We will treat dis as the predictor and nox as the response.
+
+## (a) Use the poly() function to fit a cubic polynomial regression to predict nox using dis. 
+
+Report the regression output, and plot the resulting data and polynomial fits.
+
+```{r}
+cubic.model<-lm(nox~poly(dis,3), data=Boston)
+summary(cubic.model)
+```
+
+
+```{r}
+dislim <- range(Boston$dis); dislim ## range if dis is 1.1296~12.1265
+
+dis.grid <- seq(from = 1.1296, to = 12.126, by = 0.1)
+
+pred <- predict(cubic.model, list(dis = dis.grid))
+plot(nox ~ dis, data = Boston, col = "blue")
+lines(dis.grid, pred, col = "red", lwd = 2)
+```
+
+The smooth line suggest the cubic model fit pretty well.
+
+
+## (b) Plot the polynomial fits for a range of different polynomial degrees (say, from 1 to 10). report the associated residual sum of squares.
+
+```{r}
+RSS <- rep(NA, 10)
+for (i in 1:10) {
+    model <- lm(nox ~ poly(dis, i), data = Boston)
+    RSS[i] <- sum(model$residuals^2)
+}
+plot(1:10, RSS, xlab = "Degree", ylab = "RSS", type = "l")
+
+
+order(RSS); RSS[10]
+```
+
+Form the plot, RSS appears to decrease with the degree of the polynomial, the RSS of a polynomial of degree 10
+is  minimum, 1.832. 
+
+
+## (c) Perform cross-validation or another approach to select the optimal degree for the polynomial and explain your results.
+
+
+```{r}
+xval <- rep(NA, 10)
+for (i in 1:10) {
+    fit <- glm(nox ~ poly(dis, i), data = Boston)
+    xval[i] <- cv.glm(Boston, fit, K = 10)$delta[1]
+}
+plot(1:10, xval, xlab = "Degree", ylab = "Test MSE", type = "l")
+```
+
+## (d) Use the bs() function to fit a regression spline to predict nox using dis. Report the output for the fit using four degrees of freedom. How did you choose the knots? Plot the resulting fit.
+
+I chose the 3, 6 and 9 within the range of dis variable and made the spline model and prediction.
+
+```{r}
+library(splines)
+model.spline <- lm(nox ~ bs(dis, knots = c(3, 6, 9)), data = Boston)
+summary(model.spline)
+```
+
+
+```{r}
+pred2 <- predict(model.spline, list(dis = dis.grid))
+plot(nox ~ dis, data = Boston, col = "blue")
+lines(dis.grid, pred2, col = "red", lwd = 2)
+```
+
+
+## (e) Now fit a regression spline for a range of degrees of freedom. plot the resulting fits and report the resulting RSS. Describe the results obtained.
+
+```{r}
+RSS.spline <- rep(NA, 20)
+for (i in 3:20) {
+    model.spline <- lm(nox ~ bs(dis, df = i), data = Boston)
+    RSS.spline[i] <- sum(model.spline$residuals^2)
+}
+plot(3:20, RSS.spline[-c(1, 2)], xlab = "Degrees of freedom", ylab = "RSS", type = "l")
+```
+
+From 3-20 range, the spline model with degree of freedoms less than 15 have lower RSS value.
+
+
+
+## (f) Perform cross-validation or another approach in order to select the best degrees of freedom for a regression spline on this data. Describe your results.
+
+```{r warning=FALSE}
+CV <- rep(NA, 20); CV
+for (i in 3:20) {
+    model.spline <- glm(nox ~ bs(dis, df = i), data = Boston)
+    CV[i] <- cv.glm(Boston, model.spline, K = 10)$delta[1]
+}
+
+```
+```{r}
+plot(3:20, CV[-c(1, 2)], xlab = "Degrees of Freedom", ylab = "MSE from test", type = "l")
+```
+
+By 10 fold validation, the test MSE for df (3~20) starts high at 3 DF and fluncatate, then plunged into very low, then suddenly jump to high at 15 DF and then keep high. The tests with 5~8 degree of freedom have lower MSE.
